@@ -4,51 +4,37 @@ const bodyParser = require('body-parser');
 const app = express();
 const User = require('./models/User');
 const Post = require('./models/Post');
+const keys = require('./config/Keys');
 
-const db = "mongodb+srv://astrolabs:makeithappen@cluster0-4h9ap.mongodb.net/test?retryWrites=true&w=majority"
-
+// Configure express to read body from a POST request
 app.use(bodyParser.urlencoded({ extended: false }));
 
+// Database connection string
+const db = keys.mongoURI;
+
+// Connect to mongo with mongoose
 mongoose
     .connect(db, {})
     .then(()=> console.log("Db Connected"))
     .catch(err => console.log(err));
 
+// Anything that goes to http://localhost:5000/users/
+// goes in User.js
+const userRoutes = require('./routes/User');
+app.use('/users', userRoutes);
+
+//Post routes
+const postRoutes = require('./routes/Post');
+app.use('/posts', postRoutes);
+
+// Method: GET
+// The homepage
 app.get('/', (req, res) => res.json({
     msg: "Hello Amingo!!"
 }));
 
-const userRoutes = require('./routes/User')
-app.use('/users', userRoutes);
-
-app.post('/posts', (req, res) => {
-    User
-    .findOne({email: req.body.email})
-    .then( user => {
-        console.log("User found", user);
-        if (user) {
-            const newPost = new Post({
-                message: req.body.message,
-                user: user
-            })
-            newPost
-                .save()
-                .then(post=> res.json (post))
-                .catch(err => res.json(err))
-        } else {
-            return res.status(400).json({message: "User not found"})
-        }
-    })
-});
-
-//Method: GET
-// Route to fetch all the posts from collection
-app.get('/posts', (req, res) => {
-    Post.find()
-        .then(posts => res.json(posts))
-        .catch(err => console.log(err)) 
-});
-
+// If port is specified, user it. Otherwise default to 5000
 const port = process.env.PORT || 5000;
 
+// Connect to the port.
 app.listen(port, () => console.log(`Your application is runnint @ http://localhost:${port}`));
